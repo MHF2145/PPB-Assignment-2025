@@ -67,4 +67,5 @@ dependencies {
     ksp("androidx.room:room-compiler:$room_version") // Gunakan ksp bukan annotationProcessor
     implementation("androidx.room:room-ktx:$room_version")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 }

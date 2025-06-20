@@ -1,4 +1,3 @@
-// file: WeatherData.kt
 package com.example.catashtope
 
 import androidx.room.Embedded
@@ -13,6 +12,9 @@ data class WeatherResponse(
 
     val latitude: Double,
     val longitude: Double,
+
+    // New Field
+    val cityName: String = "Unknown",
 
     @Embedded(prefix = "current_")
     @SerializedName("current")

@@ -1,4 +1,3 @@
-// file: WeatherRepository.kt
 package com.example.catashtope
 
 import android.content.Context
@@ -24,26 +23,30 @@ class WeatherRepository(private val context: Context) {
     val lastUpdatedTimestamp: Flow<Long?> = dataStore.data.map { it[LAST_UPDATED_KEY] }
     val allWeatherData: Flow<List<WeatherResponse>> = weatherDao.getAllWeatherData()
 
-
-    suspend fun refreshWeatherData() {
+    suspend fun refreshWeatherData(city: String = "Surabaya") {
         try {
-            Log.d("WeatherRepository", "Fetching weather data from API...")
-            val response = WeatherApi.retrofitService.getWeatherData()
+            Log.d("WeatherRepository", "Geocoding city: $city")
+            val geo = GeoApi.service.getCoordinates(city)
+            val location = geo.results?.firstOrNull()
+                ?: throw Exception("Kota tidak ditemukan: $city")
+
+            val lat = location.latitude
+            val lon = location.longitude
+
+            Log.d("WeatherRepository", "Fetching weather for $lat,$lon")
+            val response = WeatherApi.retrofitService.getWeatherData(lat, lon)
             if (response.isSuccessful && response.body() != null) {
-                val newData = response.body()!!.copy(id = 0)
-                Log.d("WeatherRepository", "API Success: $newData")
-
+                val newData = response.body()!!.copy(id = 0, cityName = city)
                 weatherDao.insertOrUpdate(newData)
-                Log.d("WeatherRepository", "Data inserted to DB with id: ${newData.id}")
-
                 dataStore.edit { it[LAST_UPDATED_KEY] = System.currentTimeMillis() }
+                Log.d("WeatherRepository", "Weather data updated for $city")
             } else {
                 Log.e("WeatherRepository", "API Failed: ${response.code()} - ${response.errorBody()?.string()}")
+                throw Exception("Gagal mengambil data cuaca dari API")
             }
         } catch (e: Exception) {
-            Log.e("WeatherRepository", "Exception during API call: ${e.message}")
-            throw e // rethrow so ViewModel can catch it and update UI
+            Log.e("WeatherRepository", "Exception: ${e.message}")
+            throw e
         }
     }
 }
-

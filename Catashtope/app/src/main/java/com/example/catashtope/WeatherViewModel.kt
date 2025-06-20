@@ -1,4 +1,3 @@
-// file: WeatherViewModel.kt
 package com.example.catashtope
 
 import android.app.Application
@@ -43,12 +42,11 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-
-    fun refreshData() {
+    fun refreshData(city: String = "Surabaya") {
         viewModelScope.launch {
             try {
                 errorState.value = null
-                repository.refreshWeatherData()
+                repository.refreshWeatherData(city)
             } catch (e: Exception) {
                 errorState.value = "Gagal mengambil data: ${e.message}"
             }
