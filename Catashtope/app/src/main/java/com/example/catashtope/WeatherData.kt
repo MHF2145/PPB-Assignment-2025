@@ -8,7 +8,8 @@ import com.google.gson.annotations.SerializedName
 
 @Entity(tableName = "weather_data")
 data class WeatherResponse(
-    @PrimaryKey val id: Int = 1,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
 
     val latitude: Double,
     val longitude: Double,

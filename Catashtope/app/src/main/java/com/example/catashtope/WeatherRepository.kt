@@ -20,7 +20,7 @@ class WeatherRepository(private val context: Context) {
         val LAST_UPDATED_KEY = longPreferencesKey("last_updated")
     }
 
-    val weatherData: Flow<WeatherResponse?> = weatherDao.getWeatherData()
+    val weatherData: Flow<WeatherResponse?> = weatherDao.getLatestWeather()
     val lastUpdatedTimestamp: Flow<Long?> = dataStore.data.map { it[LAST_UPDATED_KEY] }
     val allWeatherData: Flow<List<WeatherResponse>> = weatherDao.getAllWeatherData()
 
@@ -30,7 +30,7 @@ class WeatherRepository(private val context: Context) {
             Log.d("WeatherRepository", "Fetching weather data from API...")
             val response = WeatherApi.retrofitService.getWeatherData()
             if (response.isSuccessful && response.body() != null) {
-                val newData = response.body()!!
+                val newData = response.body()!!.copy(id = 0)
                 Log.d("WeatherRepository", "API Success: $newData")
 
                 weatherDao.insertOrUpdate(newData)
@@ -46,3 +46,4 @@ class WeatherRepository(private val context: Context) {
         }
     }
 }
+

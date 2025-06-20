@@ -44,12 +44,12 @@ class MainActivity : ComponentActivity() {
 fun WeatherScreen(viewModel: WeatherViewModel) {
     val state by viewModel.uiState.collectAsState()
     val allWeather by viewModel.allWeatherData.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
 
-    // Polling untuk refresh data secara periodik
     LaunchedEffect(Unit) {
         while (true) {
             viewModel.refreshData()
-            delay(600_000L) // Refresh setiap 10 menit
+            delay(600_000L) // 10 minutes
         }
     }
 
@@ -67,7 +67,14 @@ fun WeatherScreen(viewModel: WeatherViewModel) {
                     onRefresh = { viewModel.refreshData() }
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                WeatherHistoryTable(dataList = allWeather)
+
+                Button(onClick = { showDialog = true }) {
+                    Text("Lihat Riwayat Cuaca")
+                }
+
+                if (showDialog) {
+                    WeatherHistoryDialog(dataList = allWeather, onDismiss = { showDialog = false })
+                }
             }
             state.isLoading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -118,41 +125,75 @@ fun WeatherCard(data: WeatherResponse, lastUpdated: Long?, onRefresh: () -> Unit
 }
 
 @Composable
-fun WeatherHistoryTable(dataList: List<WeatherResponse>) {
-    Text(
-        text = "Riwayat Data Cuaca",
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(vertical = 8.dp)
-    )
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(), // Use height directly here
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(dataList) { item ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("ID: ${item.id}", fontWeight = FontWeight.SemiBold)
-                    Text("Waktu: ${item.current.time}")
-                    Text("Suhu: ${item.current.temperature} ${item.units.temperature}")
-                    Text("Hujan: ${item.current.rain} ${item.units.rain}")
-                    Text("Salju: ${item.current.snowfall} ${item.units.snowfall}")
-                    Text("Siang/Malam: ${if (item.current.isDay == 1) "Siang" else "Malam"}")
+fun WeatherHistoryDialog(dataList: List<WeatherResponse>, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup")
+            }
+        },
+        title = {
+            Text("Riwayat Data Cuaca", style = MaterialTheme.typography.titleLarge)
+        },
+        text = {
+            Box(modifier = Modifier.heightIn(max = 400.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(dataList) { item ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                            elevation = CardDefaults.cardElevation(4.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = formatISO8601(item.current.time),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0D47A1)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("🌡️ Suhu: ${item.current.temperature} ${item.units.temperature}")
+                                Text("🌧️ Hujan: ${item.current.rain} ${item.units.rain}")
+                                Text("❄️ Salju: ${item.current.snowfall} ${item.units.snowfall}")
+                                Text("🕒 Waktu: ${if (item.current.isDay == 1) "Siang" else "Malam"}")
+                            }
+                        }
+                    }
                 }
             }
         }
-    }
+    )
 }
 
 fun formatTimestamp(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
+
+fun formatISO8601(isoTime: String): String {
+    return try {
+        val utcParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
+        utcParser.timeZone = java.util.TimeZone.getTimeZone("UTC")
+
+        val localFormatter = SimpleDateFormat("dd MMMM yyyy, HH:mm", Locale("id", "ID"))
+        localFormatter.timeZone = java.util.TimeZone.getDefault()
+
+        val date = utcParser.parse(isoTime)
+        localFormatter.format(date!!)
+    } catch (e: Exception) {
+        isoTime // fallback to raw if parsing fails
+    }
+}
+
 
 @Composable
 fun ErrorView(message: String, onRetry: () -> Unit) {

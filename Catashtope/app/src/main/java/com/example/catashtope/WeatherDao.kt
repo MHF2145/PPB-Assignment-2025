@@ -18,8 +18,9 @@ interface WeatherDao {
 
     // Fungsi untuk mengambil data. Menggunakan Flow agar UI otomatis update
     // setiap kali ada perubahan data di tabel ini.
-    @Query("SELECT * FROM weather_data WHERE id = 0")
-    fun getWeatherData(): Flow<WeatherResponse?>
+    @Query("SELECT * FROM weather_data ORDER BY id DESC LIMIT 1")
+    fun getLatestWeather(): Flow<WeatherResponse?>
+
 
     @Query("SELECT * FROM weather_data")
     fun getAllWeatherData(): Flow<List<WeatherResponse>>
